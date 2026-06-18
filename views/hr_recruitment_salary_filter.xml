@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="job_filter_by_salary" inherit_id="website_hr_recruitment.topbar_customizations"
+              active="True" priority="45">
+        <xpath expr="//div[hasclass('o_jobs_topbar_search_bar')]" position="before">
+
+            <t t-set="salary_domain" t-value="[('website_published', '=', True), ('salary_level_id', '!=', False)]"/>
+            <t t-if="request.params.get('industry_id')">
+                <t t-set="salary_domain" t-value="salary_domain + [('industry_id', '=', int(request.params.get('industry_id')))]"/>
+            </t>
+            <t t-if="request.params.get('department_id')">
+                <t t-set="salary_domain" t-value="salary_domain + [('department_id', '=', int(request.params.get('department_id')))]"/>
+            </t>
+            <t t-if="request.params.get('contract_type_id')">
+                <t t-set="salary_domain" t-value="salary_domain + [('contract_type_id', '=', int(request.params.get('contract_type_id')))]"/>
+            </t>
+            <t t-if="request.params.get('office_id')">
+                <t t-set="salary_domain" t-value="salary_domain + [('address_id', '=', int(request.params.get('office_id')))]"/>
+            </t>
+                <t t-if="request.params.get('state_id')">
+                <t t-set="salary_domain" t-value="salary_domain + [('state_id', '=', int(request.params.get('state_id')))]"/>
+            </t>
+
+            <t t-set="salary_levels" t-value="request.env['hr.recruitment.salary.level'].sudo().search([('active', '=', True)], order='sequence')"/>
+            <t t-set="job_counts" t-value="{g['salary_level_id'][0]: g['salary_level_id_count'] for g in request.env['hr.job'].sudo().read_group(salary_domain, ['salary_level_id'], ['salary_level_id'])}"/>
+            <t t-set="salary_levels_with_jobs" t-value="salary_levels.filtered(lambda l: job_counts.get(l.id, 0) > 0)"/>
+
+            <t t-if="salary_levels_with_jobs">
+                <t t-set="current_salary_id" t-value="salary_level_id.id if salary_level_id else None"/>
+                <div class="dropdown d-none d-lg-block">
+                    <button type="button" class="btn btn-light dropdown-toggle" data-bs-toggle="dropdown">
+                        <t t-if="salary_level_id"><t t-out="salary_level_id.name"/></t>
+                        <t t-else="">Mức Lương</t>
+                    </button>
+                    <div class="dropdown-menu w-100 w-md-auto">
+                        <t t-set="params_no_salary" t-value="dict((k,v) for k,v in request.params.items() if k not in ('salary_level_id', 'page'))"/>
+                        <a t-att-href="'/jobs' + ('?' + '&amp;'.join(k+'='+str(v) for k,v in params_no_salary.items()) if params_no_salary else '')"
+                           t-attf-class="dropdown-item#{' active' if not current_salary_id else ''}">
+                            Tất cả mức lương
+                            <span class="badge ms-1"><t t-out="sum(job_counts.values())"/></span>
+                        </a>
+                        <t t-foreach="salary_levels_with_jobs" t-as="level">
+                            <t t-set="params_with_salary" t-value="dict((k,v) for k,v in request.params.items() if k not in ('salary_level_id', 'page'))"/>
+                            <t t-set="dummy" t-value="params_with_salary.update({'salary_level_id': level.id})"/>
+                            <a t-att-href="'/jobs?' + '&amp;'.join(k+'='+str(v) for k,v in params_with_salary.items())"
+                               t-attf-class="dropdown-item#{' active' if current_salary_id == level.id else ''}">
+                                <t t-out="level.name"/>
+                                <span class="badge ms-1"><t t-out="job_counts.get(level.id, 0)"/></span>
+                            </a>
+                        </t>
+                    </div>
+                </div>
+            </t>
+
+        </xpath>
+
+
+          <!-- Mobile accordion - -->
+        <xpath expr="//div[hasclass('accordion-flush')]" position="inside">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse"
+                            t-att-data-bs-target="'#salaryDropdown'"
+                            aria-expanded="false">
+                        Mức Lương
+                    </button>
+                </h2>
+                <div id="salaryDropdown" class="accordion-collapse collapse"
+                     t-att-data-bs-parent="'#o_jobs_offcanvas'">
+                    <div class="accordion-body pt-0">
+                        <ul class="list-group list-group-flush">
+                            <t t-if="salary_levels_with_jobs">
+                                <li class="list-group-item px-0 border-0">
+                                    <a t-attf-href="/jobs?salary_level_id=&amp;#{params_no_salary}"
+                                       class="d-flex align-items-center justify-content-between text-reset text-decoration-none">
+                                        <div class="form-check flex-basis-100">
+                                            <input class="form-check-input pe-none" type="radio"
+                                                   name="salary_all"
+                                                   t-att-checked="not current_salary_id"/>
+                                            <label class="form-check-label">Tất cả mức lương</label>
+                                        </div>
+                                        <span class="badge pagination text-bg-primary ms-2">
+                                            <t t-out="sum(job_counts.values())"/>
+                                        </span>
+                                    </a>
+                                </li>
+                                <t t-foreach="salary_levels_with_jobs" t-as="level">
+                                    <li class="list-group-item px-0 border-0">
+                                        <a t-attf-href="/jobs?salary_level_id=#{level.id}&amp;#{params_no_salary}"
+                                           class="d-flex align-items-center justify-content-between text-reset text-decoration-none">
+                                            <div class="form-check flex-basis-100">
+                                                <input class="form-check-input pe-none" type="radio"
+                                                       t-attf-name="salary_#{level.id}"
+                                                       t-att-checked="current_salary_id == level.id"/>
+                                                <label class="form-check-label" t-out="level.name"/>
+                                            </div>
+                                            <span class="badge pagination text-bg-primary ms-2">
+                                                <t t-out="job_counts.get(level.id, 0)"/>
+                                            </span>
+                                        </a>
+                                    </li>
+                                </t>
+                            </t>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </template>
+</odoo>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Thêm field Mức Lương, Địa Điểm, Trình độ vào form Job Edit -->
+    <record id="view_hr_job_form_inherit_salary_level" model="ir.ui.view">
+        <field name="name">hr.job.form.inherit.salary.level</field>
+        <field name="model">hr.job</field>
+        <field name="inherit_id" ref="hr.view_hr_job_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='contract']" position="inside">
+                <field name="salary_level_id" string="Mức Lương"/>
+                <field name="state_id" string="Tỉnh/Thành phố"/>
+                 <field name="ward_id"
+                       string="Phường/Xã"
+                       domain="[('state_id', '=', state_id)]"
+                       options="{'no_create': True, 'no_open': True}"/>
+                <field name="job_address" string="Địa chỉ chi tiết"/>
+                <field name="degree_id" string="Trình độ yêu cầu"/>
+            </xpath>
+
+            <xpath expr="//page[@name='job_description_page']" position="after">
+                <page string="Yêu cầu &amp; Quyền lợi" name="requirements_benefits">
+                    <group>
+                        <field name="requirements" string="Yêu cầu ứng viên"
+                               class="oSummernote" options="{'height': 200}"
+                               colspan="2"/>
+                        <field name="benefits" string="Quyền lợi"
+                               class="oSummernote" options="{'height': 200}"
+                               colspan="2"/>
+                    </group>
+                </page>
+            </xpath>
+
+            <!--            Ẩn expected-->
+           <xpath expr="//field[@name='expected_degree']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+<!--            hiển thị img-->
+            <xpath expr="//field[@name='user_id']" position="after">
+                <field name="hr_job_photo" widget="image" class="oe_avatar" options="{'size': [128, 128]}" style="float: left;"/>
+            </xpath>
+
+            <!-- Readonly field website_published khi chưa approved -->
+            <xpath expr="//field[@name='website_published']" position="attributes">
+                <attribute name="readonly">moderation_state != 'approved'</attribute>
+                <attribute name="widget">boolean_toggle</attribute>
+                <attribute name="help">Nếu tin chưa được duyệt không thể bật xuất bản.</attribute>
+            </xpath>
+
+<!--            Thay đổi tên tab tổng kết-->
+            <xpath expr="//page[@name='job_description_page']" position="attributes">
+                <attribute name="string">Mô tả công việc</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
